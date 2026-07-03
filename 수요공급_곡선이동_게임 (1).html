@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수요·공급 곡선 이동 게임 | 중학교 3학년 사회</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue: #185FA5; --blue-light: #E6F1FB; --blue-mid: #378ADD;
+    --green: #3B6D11; --green-light: #EAF3DE; --green-mid: #639922;
+    --red: #A32D2D; --red-light: #FCEBEB;
+    --amber: #633806; --amber-light: #FAEEDA;
+    --gray-bg: #F7F6F3; --white: #ffffff;
+    --text: #1a1a1a; --text-muted: #666;
+    --border: #ddd; --border-light: #eee;
+    --radius: 10px; --radius-sm: 6px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--gray-bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 20px 24px 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow);
+  }
+  .header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .header-icon { width: 36px; height: 36px; background: var(--blue-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .header h1 { font-size: 17px; font-weight: 700; color: var(--text); }
+  .header .subject { font-size: 12px; color: var(--text-muted); }
+
+  /* Progress */
+  .progress-wrap { background: var(--white); border-radius: var(--radius); padding: 14px 20px; margin-bottom: 14px; border: 1px solid var(--border-light); }
+  .progress-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .progress-label { font-size: 13px; font-weight: 500; color: var(--text); }
+  .progress-score { font-size: 13px; color: var(--blue); font-weight: 700; }
+  .bar { height: 8px; background: var(--border-light); border-radius: 99px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--blue-mid); border-radius: 99px; transition: width 0.4s ease; }
+
+  /* Screen */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Card */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 20px 20px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow);
+  }
+
+  /* Intro */
+  .intro-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .intro-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.7; }
+  .rules { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .rule-item { background: var(--gray-bg); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; line-height: 1.6; border-left: 3px solid transparent; }
+  .rule-item.d-plus { border-color: var(--blue-mid); }
+  .rule-item.d-minus { border-color: #888; }
+  .rule-item.s-plus { border-color: var(--green-mid); }
+  .rule-item.s-minus { border-color: #D85A30; }
+  .rule-item .r-head { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+  .rule-item .r-body { color: var(--text-muted); font-size: 12px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin: 0 1px; }
+  .tag-blue { background: var(--blue-light); color: var(--blue); }
+  .tag-green { background: var(--green-light); color: var(--green); }
+  .tag-red { background: var(--red-light); color: var(--red); }
+  .tag-amber { background: var(--amber-light); color: var(--amber); }
+  .tag-gray { background: #eee; color: #555; }
+
+  .start-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--blue); color: white;
+    border: none; border-radius: var(--radius-sm);
+    padding: 12px 28px; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .start-btn:hover { background: #0C447C; }
+  .start-btn:active { transform: scale(0.98); }
+
+  /* Quiz */
+  .q-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 6px; }
+  .q-num { font-size: 13px; color: var(--text-muted); }
+  .q-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+  .badge-demand { background: var(--blue-light); color: var(--blue); }
+  .badge-supply { background: var(--green-light); color: var(--green); }
+
+  .scenario {
+    background: #F0F6FF;
+    border-left: 4px solid var(--blue-mid);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.75;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  canvas#graph {
+    display: block;
+    margin: 0 auto 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+    max-width: 100%;
+    background: white;
+  }
+
+  .hint-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .q-label { font-size: 14px; font-weight: 700; color: var(--text); }
+  .hint-toggle { font-size: 12px; color: var(--blue); cursor: pointer; text-decoration: underline; background: none; border: none; font-family: inherit; }
+  .hint-box {
+    background: #FFFBF0; border: 1px solid #FDEFC3;
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    font-size: 13px; color: #7a5c00; margin-bottom: 10px;
+    display: none; line-height: 1.6;
+  }
+  .hint-box.show { display: block; }
+
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .opt {
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 11px 13px;
+    font-size: 13px; cursor: pointer; text-align: left;
+    line-height: 1.5; font-family: inherit; color: var(--text);
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .opt:hover:not(:disabled) { background: var(--blue-light); border-color: var(--blue-mid); }
+  .opt.correct { border-color: var(--green-mid); background: var(--green-light); color: var(--green); font-weight: 700; }
+  .opt.wrong { border-color: var(--red); background: var(--red-light); color: var(--red); }
+  .opt.reveal { border-color: var(--green-mid); background: var(--green-light); color: var(--green); }
+  .opt:disabled { cursor: default; }
+
+  .feedback {
+    border-radius: var(--radius-sm); padding: 12px 16px;
+    font-size: 13px; line-height: 1.7; display: none; margin-bottom: 12px;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok { background: var(--green-light); color: var(--green); border-left: 3px solid var(--green-mid); }
+  .feedback.ng { background: var(--red-light); color: var(--red); border-left: 3px solid var(--red); }
+  .feedback-icon { font-size: 16px; margin-right: 4px; }
+
+  .next-row { display: flex; justify-content: flex-end; }
+  .next-btn {
+    background: var(--blue); color: white; border: none;
+    border-radius: var(--radius-sm); padding: 10px 22px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: background 0.15s;
+  }
+  .next-btn:hover { background: #0C447C; }
+  .next-btn:active { transform: scale(0.98); }
+
+  /* Result */
+  .result-center { text-align: center; padding: 10px 0 20px; }
+  .result-emoji { font-size: 44px; margin-bottom: 8px; }
+  .result-score { font-size: 48px; font-weight: 700; color: var(--blue); line-height: 1; }
+  .result-total { font-size: 20px; color: var(--text-muted); font-weight: 400; }
+  .result-msg { font-size: 15px; color: var(--text); margin-top: 10px; }
+  .result-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+  .stat-card { background: var(--gray-bg); border-radius: var(--radius-sm); padding: 14px 10px; text-align: center; }
+  .stat-val { font-size: 24px; font-weight: 700; }
+  .stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .ok-val { color: var(--green); }
+  .ng-val { color: var(--red); }
+  .pct-val { color: var(--blue); }
+  .result-note { font-size: 13px; color: var(--text-muted); line-height: 1.7; padding: 12px 16px; background: var(--gray-bg); border-radius: var(--radius-sm); margin-bottom: 18px; }
+  .result-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn-retry { background: var(--blue); color: white; border: none; border-radius: var(--radius-sm); padding: 11px 24px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn-retry:hover { background: #0C447C; }
+  .btn-intro { background: var(--white); color: var(--text); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 11px 20px; font-size: 14px; cursor: pointer; font-family: inherit; }
+  .btn-intro:hover { background: var(--gray-bg); }
+
+  /* Review section */
+  .review-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+  .review-item { background: var(--gray-bg); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 8px; font-size: 13px; border-left: 3px solid var(--border); }
+  .review-item.ok-item { border-left-color: var(--green-mid); }
+  .review-item.ng-item { border-left-color: var(--red); }
+  .review-q { color: var(--text-muted); margin-bottom: 4px; font-size: 12px; }
+  .review-ans { font-weight: 500; font-size: 13px; color: var(--text); }
+
+  @media (max-width: 480px) {
+    body { padding: 10px; }
+    .rules { grid-template-columns: 1fr; }
+    .options { grid-template-columns: 1fr; }
+    .result-stats { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div class="header-icon">📈</div>
+      <div>
+        <h1>수요·공급 곡선 이동 게임</h1>
+        <div class="subject">중학교 3학년 사회 · 시장 가격의 결정</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress (퀴즈 중에만 의미 있음) -->
+  <div class="progress-wrap" id="progress-wrap" style="display:none">
+    <div class="progress-top">
+      <div class="progress-label" id="prog-label">문제 1 / 8</div>
+      <div class="progress-score" id="prog-score">0점</div>
+    </div>
+    <div class="bar"><div class="bar-fill" id="bar-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- ===== 인트로 화면 ===== -->
+  <div class="screen active" id="s-intro">
+    <div class="card">
+      <div class="intro-title">📈 곡선이 움직이면 가격이 바뀐다!</div>
+      <div class="intro-sub">실생활 시나리오를 읽고, 수요 또는 공급 곡선이 어느 방향으로 이동하는지 맞혀 보세요. 균형 가격이 오르는지 내리는지도 함께 판단해야 합니다!</div>
+
+      <div class="rules">
+        <div class="rule-item d-plus">
+          <div class="r-head">📈 수요 증가</div>
+          <div class="r-body">수요 곡선 <span class="tag tag-blue">오른쪽 →</span><br>가격 <span class="tag tag-red">↑ 상승</span></div>
+        </div>
+        <div class="rule-item d-minus">
+          <div class="r-head">📉 수요 감소</div>
+          <div class="r-body">수요 곡선 <span class="tag tag-gray">← 왼쪽</span><br>가격 <span class="tag tag-green">↓ 하락</span></div>
+        </div>
+        <div class="rule-item s-plus">
+          <div class="r-head">🏭 공급 증가</div>
+          <div class="r-body">공급 곡선 <span class="tag tag-blue">오른쪽 →</span><br>가격 <span class="tag tag-green">↓ 하락</span></div>
+        </div>
+        <div class="rule-item s-minus">
+          <div class="r-head">⚠️ 공급 감소</div>
+          <div class="r-body">공급 곡선 <span class="tag tag-gray">← 왼쪽</span><br>가격 <span class="tag tag-red">↑ 상승</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <button class="start-btn" onclick="startGame()">게임 시작 →</button>
+        <span style="font-size:13px; color:var(--text-muted)">총 8문제 · 문제마다 힌트 제공</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 퀴즈 화면 ===== -->
+  <div class="screen" id="s-quiz">
+    <div class="card">
+      <div class="q-meta">
+        <div class="q-num" id="q-num"></div>
+        <div class="q-badge" id="q-badge"></div>
+      </div>
+      <div class="scenario" id="scenario"></div>
+
+      <canvas id="graph" width="560" height="260"></canvas>
+
+      <div class="hint-row">
+        <div class="q-label">어떤 변화가 일어날까요?</div>
+        <button class="hint-toggle" onclick="toggleHint()">💡 힌트 보기</button>
+      </div>
+      <div class="hint-box" id="hint-box"></div>
+
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="next-row">
+        <button class="next-btn" id="next-btn" onclick="nextQ()" style="display:none">다음 문제 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 결과 화면 ===== -->
+  <div class="screen" id="s-result">
+    <div class="card">
+      <div class="result-center">
+        <div class="result-emoji" id="result-emoji">🎉</div>
+        <div><span class="result-score" id="final-score">0</span><span class="result-total"> / 8점</span></div>
+        <div class="result-msg" id="result-msg"></div>
+      </div>
+      <div class="result-stats">
+        <div class="stat-card"><div class="stat-val ok-val" id="r-ok">0</div><div class="stat-lbl">정답</div></div>
+        <div class="stat-card"><div class="stat-val ng-val" id="r-ng">0</div><div class="stat-lbl">오답</div></div>
+        <div class="stat-card"><div class="stat-val pct-val" id="r-pct">0%</div><div class="stat-lbl">정답률</div></div>
+      </div>
+      <div class="result-note" id="result-note"></div>
+      <div class="result-btns">
+        <button class="btn-retry" onclick="startGame()">다시 도전하기 →</button>
+        <button class="btn-intro" onclick="goIntro()">처음으로</button>
+      </div>
+    </div>
+
+    <div class="card" id="review-section">
+      <div class="review-title">📋 문제 복습</div>
+      <div id="review-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    scenario: "여름철 폭염이 계속되면서 에어컨에 대한 소비자들의 구매 욕구가 크게 높아졌습니다. 에어컨 시장에서는 어떤 일이 일어날까요?",
+    type: "demand", curveMove: "demand-right", priceDir: "up",
+    answer: 2,
+    options: ["수요 곡선 왼쪽 이동 → 가격 하락", "공급 곡선 오른쪽 이동 → 가격 하락", "수요 곡선 오른쪽 이동 → 가격 상승", "공급 곡선 왼쪽 이동 → 가격 상승"],
+    hint: "소비자들이 에어컨을 더 많이 사고 싶어 한다면 수요가 늘어나는 것입니다.",
+    explain: "폭염으로 에어컨 수요 증가 → 수요 곡선 오른쪽 이동 → 균형 가격 상승! 더운 여름에 에어컨 값이 오르는 이유입니다."
+  },
+  {
+    scenario: "반도체 제조 기술이 크게 발전하여 스마트폰 제조 원가가 절반으로 줄었습니다. 스마트폰 시장에 어떤 변화가 생길까요?",
+    type: "supply", curveMove: "supply-right", priceDir: "down",
+    answer: 3,
+    options: ["수요 곡선 오른쪽 이동 → 가격 상승", "수요 곡선 왼쪽 이동 → 가격 하락", "공급 곡선 왼쪽 이동 → 가격 상승", "공급 곡선 오른쪽 이동 → 가격 하락"],
+    hint: "생산 비용이 줄어들면 기업은 같은 가격에 더 많이 공급할 수 있습니다.",
+    explain: "기술 발전으로 생산 비용 감소 → 공급 증가 → 공급 곡선 오른쪽 이동 → 균형 가격 하락! 스마트폰 가격이 해마다 떨어지는 이유입니다."
+  },
+  {
+    scenario: "유명 의사가 TV에 출연해 '커피가 건강에 해롭다'는 연구 결과를 발표했습니다. 많은 사람들이 커피 소비를 줄이려 하고 있습니다. 커피 시장은?",
+    type: "demand", curveMove: "demand-left", priceDir: "down",
+    answer: 0,
+    options: ["수요 곡선 왼쪽 이동 → 가격 하락", "수요 곡선 오른쪽 이동 → 가격 상승", "공급 곡선 오른쪽 이동 → 가격 하락", "공급 곡선 왼쪽 이동 → 가격 상승"],
+    hint: "소비자들이 커피를 덜 사려고 하면 수요에 어떤 변화가 생길까요?",
+    explain: "건강 우려로 커피 수요 감소 → 수요 곡선 왼쪽 이동 → 균형 가격 하락! 소비자 기호 변화가 수요에 영향을 줍니다."
+  },
+  {
+    scenario: "이상 기후로 강원도 일대에 큰 냉해가 발생해 배추 생산량이 작년의 30% 수준으로 뚝 떨어졌습니다. 배추 시장은 어떻게 될까요?",
+    type: "supply", curveMove: "supply-left", priceDir: "up",
+    answer: 1,
+    options: ["공급 곡선 오른쪽 이동 → 가격 하락", "공급 곡선 왼쪽 이동 → 가격 상승", "수요 곡선 왼쪽 이동 → 가격 하락", "수요 곡선 오른쪽 이동 → 가격 상승"],
+    hint: "자연재해로 생산량이 줄면 시장에 공급되는 양도 줄어듭니다.",
+    explain: "냉해로 배추 생산량 감소 → 공급 감소 → 공급 곡선 왼쪽 이동 → 균형 가격 상승! 김장철 배추 값이 급등하는 이유입니다."
+  },
+  {
+    scenario: "정부가 전기차 구매 고객에게 200만 원의 보조금을 지급하기로 했습니다. 전기차 시장에는 어떤 변화가 생길까요?",
+    type: "demand", curveMove: "demand-right", priceDir: "up",
+    answer: 2,
+    options: ["공급 곡선 왼쪽 이동 → 가격 상승", "수요 곡선 왼쪽 이동 → 가격 하락", "수요 곡선 오른쪽 이동 → 가격 상승", "공급 곡선 오른쪽 이동 → 가격 하락"],
+    hint: "보조금은 소비자 입장에서 실질 가격을 낮춰 주는 효과가 있습니다. 소비자의 구매 의향이 어떻게 바뀔까요?",
+    explain: "보조금 지급 → 실질 구매 비용 감소 → 수요 증가 → 수요 곡선 오른쪽 이동 → 균형 가격 상승! 정부 정책이 수요에 영향을 줍니다."
+  },
+  {
+    scenario: "국제 원유 가격이 두 배 이상 급등했습니다. 플라스틱 원료 비용이 크게 올라 제조 기업들의 생산 부담이 커졌습니다. 플라스틱 제품 시장은?",
+    type: "supply", curveMove: "supply-left", priceDir: "up",
+    answer: 3,
+    options: ["수요 곡선 왼쪽 이동 → 가격 하락", "공급 곡선 오른쪽 이동 → 가격 하락", "수요 곡선 오른쪽 이동 → 가격 상승", "공급 곡선 왼쪽 이동 → 가격 상승"],
+    hint: "생산 비용(원자재 가격)이 오르면 기업은 같은 가격에 공급할 수 있는 양이 줄어듭니다.",
+    explain: "원자재 가격 상승 → 생산 비용 증가 → 공급 감소 → 공급 곡선 왼쪽 이동 → 균형 가격 상승! 유가가 오르면 물가 전반이 오르는 이유입니다."
+  },
+  {
+    scenario: "웰빙 트렌드로 유기농 채소 인기가 높아지자, 많은 농가들이 유기농 재배로 전환하기 시작했습니다. 유기농 채소 시장은?",
+    type: "supply", curveMove: "supply-right", priceDir: "down",
+    answer: 0,
+    options: ["공급 곡선 오른쪽 이동 → 가격 하락", "수요 곡선 오른쪽 이동 → 가격 상승", "공급 곡선 왼쪽 이동 → 가격 상승", "수요 곡선 왼쪽 이동 → 가격 하락"],
+    hint: "공급자(농가) 수가 늘어나면 시장에 나오는 물건의 양은 어떻게 될까요?",
+    explain: "농가 증가 → 유기농 채소 공급 증가 → 공급 곡선 오른쪽 이동 → 균형 가격 하락! 처음엔 비싼 유기농 채소가 점점 저렴해지는 과정입니다."
+  },
+  {
+    scenario: "한류 열풍으로 해외에서 한국 음식 레스토랑이 인기를 끌면서 김치 수출이 크게 늘었습니다. 국내 김치 시장에는 어떤 영향이 있을까요?",
+    type: "demand", curveMove: "demand-right", priceDir: "up",
+    answer: 1,
+    options: ["공급 곡선 왼쪽 이동 → 가격 상승", "수요 곡선 오른쪽 이동 → 가격 상승", "수요 곡선 왼쪽 이동 → 가격 하락", "공급 곡선 오른쪽 이동 → 가격 하락"],
+    hint: "수출 증가는 국내 시장에서 김치를 사려는 수요자가 늘어난 것과 같습니다.",
+    explain: "수출 증가 = 해외 수요 추가 → 전체 수요 증가 → 수요 곡선 오른쪽 이동 → 균형 가격 상승! 한류가 국내 물가에도 영향을 준답니다."
+  }
+];
+
+let qIdx=0, score=0, wrong=0, answered=false, shuffled=[], results=[];
+
+function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goIntro(){
+  document.getElementById('progress-wrap').style.display='none';
+  show('s-intro');
+}
+
+function startGame(){
+  shuffled=shuffle(QUESTIONS); qIdx=0; score=0; wrong=0; results=[];
+  document.getElementById('progress-wrap').style.display='block';
+  show('s-quiz');
+  renderQ();
+}
+
+function renderQ(){
+  answered=false;
+  const q=shuffled[qIdx];
+  const total=shuffled.length;
+  document.getElementById('bar-fill').style.width=(qIdx/total*100)+'%';
+  document.getElementById('prog-label').textContent=`문제 ${qIdx+1} / ${total}`;
+  document.getElementById('prog-score').textContent=`${score}점`;
+  document.getElementById('q-num').textContent=`문제 ${qIdx+1}`;
+  const badge=document.getElementById('q-badge');
+  badge.textContent=q.type==='demand'?'수요 변동':'공급 변동';
+  badge.className='q-badge '+(q.type==='demand'?'badge-demand':'badge-supply');
+  document.getElementById('scenario').textContent=q.scenario;
+  document.getElementById('hint-box').textContent='💡 '+q.hint;
+  document.getElementById('hint-box').classList.remove('show');
+  drawGraph(q,false);
+  const optsEl=document.getElementById('options');
+  optsEl.innerHTML='';
+  q.options.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='opt'; b.textContent=opt;
+    b.onclick=()=>checkAnswer(i,q);
+    optsEl.appendChild(b);
+  });
+  const fb=document.getElementById('feedback');
+  fb.className='feedback'; fb.innerHTML='';
+  document.getElementById('next-btn').style.display='none';
+}
+
+function toggleHint(){
+  document.getElementById('hint-box').classList.toggle('show');
+}
+
+function checkAnswer(chosen,q){
+  if(answered)return; answered=true;
+  const btns=document.querySelectorAll('.opt');
+  btns.forEach((b,i)=>{ b.disabled=true; if(i===q.answer)b.classList.add('reveal'); });
+  const fb=document.getElementById('feedback');
+  const correct=chosen===q.answer;
+  if(correct){ score++; btns[chosen].classList.remove('reveal'); btns[chosen].classList.add('correct'); fb.className='feedback ok show'; fb.innerHTML='<span class="feedback-icon">✅</span> <strong>정답!</strong> '+q.explain; }
+  else { wrong++; btns[chosen].classList.add('wrong'); fb.className='feedback ng show'; fb.innerHTML='<span class="feedback-icon">❌</span> <strong>오답.</strong> '+q.explain; }
+  results.push({q, correct, chosen});
+  drawGraph(q,true);
+  document.getElementById('prog-score').textContent=`${score}점`;
+  document.getElementById('next-btn').style.display='inline-block';
+}
+
+function nextQ(){
+  qIdx++;
+  if(qIdx>=shuffled.length){showResult();return;}
+  renderQ();
+}
+
+function showResult(){
+  document.getElementById('bar-fill').style.width='100%';
+  show('s-result');
+  document.getElementById('final-score').textContent=score;
+  document.getElementById('r-ok').textContent=score;
+  document.getElementById('r-ng').textContent=wrong;
+  document.getElementById('r-pct').textContent=Math.round(score/shuffled.length*100)+'%';
+  const pct=score/shuffled.length;
+  const emojis=['😅','🤔','😊','👍','🎉'];
+  const msgs=['다시 한 번 도전해 보세요!','조금 더 연습하면 완벽해질 거예요!','절반 이상 맞혔어요! 잘하고 있어요.','훌륭해요! 거의 다 맞혔습니다.','완벽합니다! 경제 분석가 자질이 있네요!'];
+  const tier=Math.min(4,Math.floor(pct*5));
+  document.getElementById('result-emoji').textContent=emojis[tier];
+  document.getElementById('result-msg').textContent=msgs[tier];
+  document.getElementById('result-note').textContent='수요·공급 곡선 이동 원리를 이해할수록 실생활의 가격 변동을 예측할 수 있어요. 틀린 문제는 꼭 해설을 다시 읽어 보세요!';
+
+  const list=document.getElementById('review-list');
+  list.innerHTML='';
+  results.forEach((r,i)=>{
+    const div=document.createElement('div');
+    div.className='review-item '+(r.correct?'ok-item':'ng-item');
+    div.innerHTML=`<div class="review-q">${i+1}. ${r.q.scenario.substring(0,40)}…</div><div class="review-ans">${r.correct?'✅':'❌'} ${r.q.options[r.q.answer]}</div>`;
+    list.appendChild(div);
+  });
+}
+
+function drawGraph(q,revealed){
+  const canvas=document.getElementById('graph');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const pad={l:54,r:28,t:28,b:50};
+  const gw=W-pad.l-pad.r, gh=H-pad.t-pad.b;
+
+  // grid
+  ctx.strokeStyle='rgba(0,0,0,0.05)'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const x=pad.l+gw*i/4, y=pad.t+gh*i/4;
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+gh); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+gw,y); ctx.stroke();
+  }
+
+  // axes
+  ctx.strokeStyle='#aaa'; ctx.lineWidth=1.5; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t-6); ctx.lineTo(pad.l,pad.t+gh); ctx.lineTo(pad.l+gw+10,pad.t+gh); ctx.stroke();
+  ctx.fillStyle='#555'; ctx.font='13px "Noto Sans KR", sans-serif';
+  ctx.fillText('가격(P)', pad.l-48, pad.t+12);
+  ctx.fillText('수량(Q)', pad.l+gw-8, pad.t+gh+20);
+
+  const eq={x:pad.l+gw*0.5, y:pad.t+gh*0.5};
+
+  function line(x1,y1,x2,y2,color,lw,dash){
+    ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=lw||2;
+    ctx.setLineDash(dash||[]); ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.restore();
+  }
+  function lbl(txt,x,y,color,bold){
+    ctx.save(); ctx.fillStyle=color; ctx.font=(bold?'bold ':'')+' 13px "Noto Sans KR", sans-serif'; ctx.fillText(txt,x,y); ctx.restore();
+  }
+  function arrowLine(x1,y1,x2,y2,color){
+    ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=1.8; ctx.setLineDash([5,3]);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    const ang=Math.atan2(y2-y1,x2-x1);
+    ctx.setLineDash([]); ctx.fillStyle=color;
+    ctx.beginPath(); ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-10*Math.cos(ang-0.4),y2-10*Math.sin(ang-0.4));
+    ctx.lineTo(x2-10*Math.cos(ang+0.4),y2-10*Math.sin(ang+0.4));
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+
+  const BLUE='#185FA5', RED='#A32D2D', GREEN='#3B6D11', ORANGE='#D85A30';
+  const shift=revealed?(q.curveMove.endsWith('right')?60:-60):0;
+  const isDemand=q.curveMove.startsWith('demand');
+
+  const dX1=pad.l+18, dY1=pad.t+14, dX2=pad.l+gw-10, dY2=pad.t+gh-14;
+  const sX1=pad.l+18, sY1=pad.t+gh-14, sX2=pad.l+gw-10, sY2=pad.t+14;
+
+  // Original curves
+  line(dX1,dY1,dX2,dY2,BLUE,2.5);
+  lbl('D',dX2+5,dY2+5,BLUE,true);
+  line(sX1,sY1,sX2,sY2,RED,2.5);
+  lbl('S',sX2+5,sY2-6,RED,true);
+
+  // Equilibrium
+  ctx.strokeStyle='#bbb'; ctx.lineWidth=0.8; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(pad.l,eq.y); ctx.lineTo(eq.x,eq.y); ctx.moveTo(eq.x,eq.y); ctx.lineTo(eq.x,pad.t+gh); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=BLUE; ctx.beginPath(); ctx.arc(eq.x,eq.y,5,0,Math.PI*2); ctx.fill();
+  lbl('E₀',eq.x+6,eq.y-8,'#444',false);
+  lbl('P₀',pad.l-26,eq.y+5,BLUE,true);
+
+  if(revealed){
+    const dShift=isDemand?shift:0, sShift=!isDemand?shift:0;
+    const newColor=isDemand?'#1D9E75':ORANGE;
+    const newLabel=isDemand?"D'":"S'";
+
+    if(isDemand){
+      line(dX1+dShift,dY1,dX2+dShift,dY2,newColor,2,null);
+      lbl(newLabel,dX2+dShift+5,dY2+5,newColor,true);
+      arrowLine(eq.x,eq.y-36,eq.x+dShift,eq.y-36,newColor);
+    } else {
+      line(sX1+sShift,sY1,sX2+sShift,sY2,newColor,2,null);
+      lbl(newLabel,sX2+sShift+5,sY2-6,newColor,true);
+      arrowLine(eq.x,eq.y+36,eq.x+sShift,eq.y+36,newColor);
+    }
+
+    const newEqX=eq.x+shift*0.5;
+    const newEqY=q.priceDir==='up'?eq.y-32:eq.y+32;
+
+    ctx.strokeStyle='#bbb'; ctx.lineWidth=0.8; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(pad.l,newEqY); ctx.lineTo(newEqX,newEqY); ctx.moveTo(newEqX,newEqY); ctx.lineTo(newEqX,pad.t+gh); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#3B6D11'; ctx.beginPath(); ctx.arc(newEqX,newEqY,5,0,Math.PI*2); ctx.fill();
+    lbl("E'",newEqX+6,newEqY-8,'#3B6D11',false);
+
+    const p1color=q.priceDir==='up'?RED:GREEN;
+    lbl('P₁',pad.l-26,newEqY+5,p1color,true);
+
+    const priceText=q.priceDir==='up'?'▲ 가격 상승':'▼ 가격 하락';
+    ctx.save();
+    ctx.fillStyle=q.priceDir==='up'?RED:GREEN;
+    ctx.font='bold 13px "Noto Sans KR", sans-serif';
+    ctx.fillText(priceText,pad.l+gw-80,pad.t+18);
+    ctx.restore();
+  }
+}
+</script>
+</body>
+</html>
