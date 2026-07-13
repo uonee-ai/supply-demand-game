@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>국가 기관 낙하 게임</title>
+<link rel="icon" type="image/png" href="icon-180.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#6C4AB0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="국가기관">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F2F4F8;
+    --ink:#22303F;
+    --sub:#5B6B7C;
+    --card:#FFFFFF;
+    --line:#D8DEE7;
+    --assembly:#6C4AB0;   /* 입법부 */
+    --gov:#2B6CB0;        /* 행정부 */
+    --court:#2F855A;      /* 사법부·법원 */
+    --hcourt:#C05621;     /* 헌법재판소 */
+    --gold:#C98A1B;
+    --wrong:#C0392B;
+    --radius:16px;
+    --disp:'Jua', sans-serif;
+    --body:'Gowun Dodum', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--body); background:var(--bg); color:var(--ink);
+    display:flex; justify-content:center; overflow:hidden;
+  }
+  .wrap{width:100%; max-width:720px; height:100%; display:flex; flex-direction:column; padding:20px 24px;}
+
+  .screen{display:none; flex:1; flex-direction:column;}
+  .screen.on{display:flex; animation:fadeIn .35s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  button{font-family:inherit; cursor:pointer;}
+  .btn{
+    display:block; width:100%; border:none; border-radius:var(--radius);
+    background:var(--ink); color:#fff; font-family:var(--disp);
+    font-size:1.15rem; padding:15px 0; letter-spacing:.03em;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn.ghost{background:#fff; color:var(--ink); border:2px solid var(--line);}
+  .btn:focus-visible, .bldg:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+
+  /* ---------- 시작 화면 ---------- */
+  .hero{text-align:center; padding:36px 12px 20px;}
+  .seal{
+    width:90px; height:90px; margin:0 auto 16px; border-radius:50%;
+    border:3px solid var(--gold); display:flex; align-items:center; justify-content:center;
+    font-family:var(--disp); font-size:1rem; color:var(--gold);
+    transform:rotate(-8deg); line-height:1.25;
+  }
+  .hero h1{font-family:var(--disp); font-size:1.9rem; margin-bottom:8px;}
+  .hero p{color:var(--sub); font-size:.93rem; line-height:1.7;}
+  .rules{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 16px; font-size:.88rem; line-height:1.8; color:var(--sub); margin:16px 0;
+  }
+  .rules b{color:var(--ink);}
+  .diff-row{display:flex; gap:8px; margin-bottom:14px;}
+  .diff{
+    flex:1; border:2px solid var(--line); background:#fff; border-radius:12px;
+    padding:10px 0; font-family:var(--disp); font-size:.95rem; color:var(--sub);
+  }
+  .diff small{display:block; font-family:var(--body); font-size:.7rem; margin-top:2px;}
+  .diff.sel{border-color:var(--gold); color:var(--ink); background:#FDF6E7;}
+  .diff:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+
+  /* ---------- 단계 안내 ---------- */
+  .inter{text-align:center; padding-top:70px;}
+  .inter .lv{
+    display:inline-block; font-family:var(--disp); font-size:1rem; color:#fff;
+    background:var(--gold); border-radius:999px; padding:4px 18px; margin-bottom:14px;
+  }
+  .inter h2{font-family:var(--disp); font-size:1.7rem; margin-bottom:12px;}
+  .inter p{color:var(--sub); line-height:1.8; margin-bottom:14px; word-break:keep-all;}
+  .inter .spd{font-size:.85rem; color:var(--sub); margin-bottom:30px;}
+  .inter .spd b{color:var(--wrong); font-family:var(--disp); font-weight:normal;}
+
+  /* ---------- HUD ---------- */
+  .hud{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:var(--disp); margin-bottom:6px;
+  }
+  .hud .lives{font-size:.95rem; letter-spacing:1px;}
+  .hud .score{font-size:1.2rem;}
+  .hud .combo{font-size:.85rem; color:var(--gold); min-width:64px; text-align:right;}
+  .stagebar{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:.75rem; color:var(--sub); margin-bottom:4px;
+  }
+  .stagebar .st{font-family:var(--disp); color:var(--ink);}
+  .progress{height:5px; background:#E1E6EE; border-radius:3px; overflow:hidden; margin-bottom:8px;}
+  .progress i{display:block; height:100%; width:0%; background:var(--gold); transition:width .3s ease;}
+
+  /* ---------- 낙하 영역 ---------- */
+  .sky{
+    position:relative; flex:1; min-height:0;
+    background:linear-gradient(180deg, #E8EDF5 0%, var(--bg) 80%);
+    border:1.5px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; margin-bottom:10px;
+  }
+  .fall-card{
+    position:absolute; left:50%; top:0;
+    width:78%; transform:translate(-50%,-110%);
+    background:var(--card); border:1.5px solid var(--line); border-radius:14px;
+    padding:20px 24px; text-align:center; font-size:1.15rem; line-height:1.65;
+    box-shadow:0 6px 16px rgba(34,48,63,.12); word-break:keep-all;
+    will-change:transform;
+  }
+  .fall-card.caught{transition:transform .25s ease, opacity .25s ease; opacity:0;}
+  .toast{
+    position:absolute; left:50%; top:38%; transform:translateX(-50%);
+    font-family:var(--disp); font-size:1.3rem; color:var(--court);
+    opacity:0; pointer-events:none;
+  }
+  .toast.show{animation:pop .7s ease forwards;}
+  @keyframes pop{
+    0%{opacity:0; transform:translate(-50%,10px) scale(.8);}
+    25%{opacity:1; transform:translate(-50%,0) scale(1.1);}
+    70%{opacity:1;}
+    100%{opacity:0; transform:translate(-50%,-14px) scale(1);}
+  }
+  .ground{
+    position:absolute; bottom:0; left:0; right:0; height:6px;
+    background:repeating-linear-gradient(90deg, var(--wrong) 0 12px, transparent 12px 20px);
+    opacity:.35;
+  }
+
+  /* ---------- 폭발 효과 ---------- */
+  .sky.quake{animation:quake .45s ease;}
+  @keyframes quake{
+    0%,100%{transform:none;}
+    20%{transform:translate(-7px,4px);}
+    40%{transform:translate(6px,-5px);}
+    60%{transform:translate(-5px,3px);}
+    80%{transform:translate(4px,-2px);}
+  }
+  .boom{
+    position:absolute; pointer-events:none; font-size:3rem; z-index:5;
+    transform:translate(-50%,-50%) scale(0);
+  }
+  .boom.show{animation:boomPop .6s ease-out forwards;}
+  @keyframes boomPop{
+    0%{transform:translate(-50%,-50%) scale(.3); opacity:1;}
+    50%{transform:translate(-50%,-50%) scale(1.4); opacity:1;}
+    100%{transform:translate(-50%,-50%) scale(1.7); opacity:0;}
+  }
+  .shock{
+    position:absolute; pointer-events:none; z-index:4;
+    width:190px; height:190px; border:4px solid var(--wrong); border-radius:50%;
+    transform:translate(-50%,-50%) scale(.08); opacity:.9;
+    animation:shockOut .55s ease-out forwards;
+  }
+  @keyframes shockOut{
+    to{transform:translate(-50%,-50%) scale(1); opacity:0;}
+  }
+  .spark{
+    position:absolute; pointer-events:none; z-index:4;
+    width:9px; height:9px; border-radius:2px;
+    transform:translate(-50%,-50%);
+    animation:sparkFly .65s ease-out forwards;
+  }
+  @keyframes sparkFly{
+    to{transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(300deg); opacity:0;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .sky.quake{animation:none;}
+    .boom.show{animation:none; opacity:0;}
+    .shock, .spark{display:none;}
+  }
+
+  /* ---------- 기관 버튼 ---------- */
+  .buildings{display:flex; gap:12px;}
+  .bldg{
+    flex:1 1 0; min-width:0; border:none; border-radius:16px; padding:15px 6px 13px;
+    color:#fff; text-align:center; font-family:var(--disp);
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    transition:transform .12s ease;
+  }
+  .bldg svg{width:38px; height:38px;}
+  .bldg .nm{font-size:1.1rem; white-space:nowrap;}
+  .bldg .en{font-size:.72rem; opacity:.85; font-family:var(--body); white-space:nowrap;}
+
+  /* ---------- 좁은 화면 대비 ---------- */
+  @media (max-width:520px){
+    .wrap{padding:12px 14px;}
+    .buildings{gap:6px;}
+    .bldg{padding:8px 2px 7px; border-radius:12px; gap:3px;}
+    .bldg svg{width:24px; height:24px;}
+    .bldg .nm{font-size:.8rem;}
+    .bldg .en{font-size:.55rem;}
+    .fall-card{font-size:.98rem; padding:14px 16px;}
+  }
+  .bldg[data-i="0"]{background:var(--assembly);}
+  .bldg[data-i="1"]{background:var(--gov);}
+  .bldg[data-i="2"]{background:var(--court);}
+  .bldg[data-i="3"]{background:var(--hcourt);}
+  .bldg:active{transform:scale(.94);}
+  .bldg.flash-ok{animation:flashOk .35s ease;}
+  .bldg.flash-no{animation:flashNo .35s ease;}
+  @keyframes flashOk{50%{box-shadow:0 0 0 4px rgba(47,133,90,.5); transform:scale(1.05);}}
+  @keyframes flashNo{50%{box-shadow:0 0 0 4px rgba(192,57,43,.55);}}
+  .keyhint{text-align:center; font-size:.7rem; color:var(--sub); margin-top:6px; display:none;}
+  @media (min-width:600px) and (pointer:fine){ .keyhint{display:block;} }
+
+  /* ---------- 해설 오버레이 ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(34,48,63,.45);
+    display:none; align-items:center; justify-content:center; padding:20px; z-index:10;
+  }
+  .overlay.on{display:flex;}
+  .modal{
+    width:100%; max-width:440px; background:#fff; border-radius:var(--radius);
+    padding:22px 20px; animation:fadeIn .25s ease;
+  }
+  .modal .head{font-family:var(--disp); font-size:1.15rem; margin-bottom:8px; color:var(--wrong);}
+  .modal .q{
+    background:var(--bg); border-radius:10px; padding:10px 12px;
+    font-size:.9rem; line-height:1.65; margin-bottom:10px; word-break:keep-all;
+  }
+  .modal .e{font-size:.9rem; line-height:1.75; margin-bottom:16px;}
+  .modal .e b{font-family:var(--disp); font-weight:normal;}
+
+  /* ---------- 결과 ---------- */
+  .result{text-align:center; padding-top:24px; overflow-y:auto;}
+  .result .tier{font-family:var(--disp); font-size:1.55rem; margin:12px 0 2px;}
+  .result .big{font-family:var(--disp); font-size:2.8rem; color:var(--gold);}
+  .result .meta{color:var(--sub); font-size:.88rem; margin:6px 0 20px; line-height:1.7;}
+  .review{
+    text-align:left; background:#fff; border:1px solid var(--line);
+    border-radius:var(--radius); padding:14px 16px; margin-bottom:16px;
+  }
+  .review h3{font-family:var(--disp); font-size:.98rem; margin-bottom:8px;}
+  .review li{
+    list-style:none; font-size:.85rem; line-height:1.65; padding:8px 0;
+    border-top:1px dashed var(--line);
+  }
+  .review li:first-of-type{border-top:none;}
+  .review li b{font-family:var(--disp); font-weight:normal;}
+  .pill{display:inline-block; color:#fff; border-radius:999px; padding:1px 9px; font-size:.72rem;}
+  .pill.i0{background:var(--assembly);} .pill.i1{background:var(--gov);} .pill.i2{background:var(--court);} .pill.i3{background:var(--hcourt);}
+
+  @media (prefers-reduced-motion: reduce){
+    .toast.show, .bldg.flash-ok, .bldg.flash-no{animation:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 시작 화면 -->
+  <section class="screen on" id="scr-start">
+    <div class="hero">
+      <div class="seal">국가<br>기관</div>
+      <h1>국가 기관 낙하 게임</h1>
+      <p>하늘에서 역할 카드가 떨어진다!<br>바닥에 닿기 전에 알맞은 기관으로 받아내자.</p>
+    </div>
+    <div class="rules">
+      <b>게임 방법</b><br>
+      ① 카드가 바닥에 닿기 전에 <b>국회 · 정부 · 법원 · 헌법재판소</b> 버튼을 누르세요.<br>
+      ② 정답 <b>100점</b> + 빨리 받을수록 <b>스피드 보너스</b> + 콤보 보너스!<br>
+      ③ 틀리거나 카드를 놓치면 ❤️가 하나 줄어요. (총 5개)<br>
+      ④ <b>1단계(하) → 2단계(중) → 3단계(상)</b>, 갈수록 문제도 어렵고 속도도 빨라진다!
+    </div>
+    <div class="diff-row" role="group" aria-label="속도 선택">
+      <button class="diff" data-d="0" onclick="setDiff(0,this)">🐢 천천히<small>처음이라면</small></button>
+      <button class="diff sel" data-d="1" onclick="setDiff(1,this)">🚶 보통<small>기본 속도</small></button>
+      <button class="diff" data-d="2" onclick="setDiff(2,this)">🚀 빠르게<small>자신 있다면</small></button>
+    </div>
+    <button class="btn" onclick="startGame()">게임 시작</button>
+  </section>
+
+  <!-- 단계 안내 -->
+  <section class="screen" id="scr-inter">
+    <div class="inter">
+      <span class="lv" id="inter-lv"></span>
+      <h2 id="inter-title"></h2>
+      <p id="inter-desc"></p>
+      <div class="spd" id="inter-spd"></div>
+      <button class="btn" onclick="beginStage()">단계 시작</button>
+    </div>
+  </section>
+
+  <!-- 게임 화면 -->
+  <section class="screen" id="scr-game">
+    <div class="hud">
+      <span class="lives" id="hud-lives">❤️❤️❤️❤️❤️</span>
+      <span class="score"><span id="hud-score">0</span>점</span>
+      <span class="combo" id="hud-combo"></span>
+    </div>
+    <div class="stagebar">
+      <span class="st" id="hud-stage"></span>
+      <span id="hud-count"></span>
+    </div>
+    <div class="progress"><i id="hud-bar"></i></div>
+
+    <div class="sky" id="sky">
+      <div class="fall-card" id="fcard"></div>
+      <div class="toast" id="toast"></div>
+      <div class="ground"></div>
+    </div>
+
+    <div class="buildings" role="group" aria-label="국가 기관 선택">
+      <button class="bldg" data-i="0" onclick="answer(0)">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+          <path d="M8 18 A12 12 0 0 1 32 18" fill="none"/>
+          <line x1="20" y1="3" x2="20" y2="6"/>
+          <line x1="6" y1="18" x2="34" y2="18"/>
+          <line x1="10" y1="22" x2="10" y2="32"/><line x1="16" y1="22" x2="16" y2="32"/>
+          <line x1="24" y1="22" x2="24" y2="32"/><line x1="30" y1="22" x2="30" y2="32"/>
+          <line x1="6" y1="35" x2="34" y2="35"/>
+        </svg>
+        <span class="nm">국회</span><span class="en">입법부</span>
+      </button>
+      <button class="bldg" data-i="1" onclick="answer(1)">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="13" y1="4" x2="13" y2="14"/>
+          <path d="M13 4 h10 l-2.5 3 2.5 3 h-10" fill="#fff" stroke="none"/>
+          <rect x="8" y="14" width="24" height="18" rx="1"/>
+          <line x1="14" y1="19" x2="14" y2="27"/><line x1="20" y1="19" x2="20" y2="27"/><line x1="26" y1="19" x2="26" y2="27"/>
+          <line x1="5" y1="35" x2="35" y2="35"/>
+        </svg>
+        <span class="nm">정부</span><span class="en">대통령·행정부</span>
+      </button>
+      <button class="bldg" data-i="2" onclick="answer(2)">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="20" y1="5" x2="20" y2="30"/>
+          <line x1="8" y1="10" x2="32" y2="10"/>
+          <path d="M8 10 l-4 9 a5 4 0 0 0 8 0 z" fill="none"/>
+          <path d="M32 10 l-4 9 a5 4 0 0 0 8 0 z" fill="none"/>
+          <line x1="13" y1="33" x2="27" y2="33"/>
+        </svg>
+        <span class="nm">법원</span><span class="en">사법부</span>
+      </button>
+      <button class="bldg" data-i="3" onclick="answer(3)">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 3.5 l1.3 2.6 2.9.4 -2.1 2 .5 2.9 -2.6-1.4 -2.6 1.4 .5-2.9 -2.1-2 2.9-.4 z" fill="#fff" stroke="none"/>
+          <path d="M20 15 C16.5 12.5, 9.5 12.5, 6.5 14.5 V32 C9.5 30, 16.5 30, 20 32.5"/>
+          <path d="M20 15 C23.5 12.5, 30.5 12.5, 33.5 14.5 V32 C30.5 30, 23.5 30, 20 32.5"/>
+          <line x1="20" y1="15" x2="20" y2="32.5"/>
+        </svg>
+        <span class="nm">헌법재판소</span><span class="en">사법부</span>
+      </button>
+    </div>
+    <div class="keyhint" id="keyhint">키보드: 1 국회 · 2 정부 · 3 법원 · 4 헌법재판소</div>
+  </section>
+
+  <!-- 해설 오버레이 -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="head" id="md-head"></div>
+      <div class="q" id="md-q"></div>
+      <div class="e" id="md-e"></div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" style="flex:1;" onclick="resume()">계속하기</button>
+        <button class="btn ghost" style="flex:1;" onclick="location.reload()">처음부터 다시</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 화면 -->
+  <section class="screen" id="scr-result">
+    <div class="result">
+      <div class="seal" style="margin:0 auto;" id="res-seal">합격<br>도장</div>
+      <div class="tier" id="res-tier"></div>
+      <div class="big"><span id="res-score">0</span>점</div>
+      <div class="meta" id="res-meta"></div>
+      <div class="review" id="res-review" style="display:none">
+        <h3>📌 놓친 카드 다시 보기</h3>
+        <ul id="res-list"></ul>
+      </div>
+      <button class="btn" onclick="location.reload()">다시 도전하기</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const ORG = ["국회 (입법부)", "정부 (대통령)", "법원", "헌법재판소"];
+
+/* speed: [단계 첫 카드 낙하 시간(초), 단계 마지막 카드 낙하 시간(초)] */
+const STAGES = [
+  {
+    lv:"1단계 · 난이도 하", title:"기본 임무", speed:[12, 9],
+    desc:"국회, 정부, 법원, 헌법재판소의 가장 기본적인 역할부터!\n카드가 천천히 떨어지니 차근차근 읽고 판단하자.",
+    cards:[
+      { t:"국민이 지켜야 할 법률을 만들거나 고침", a:0,
+        e:"입법권은 국민의 대표 기관인 국회에 속함 (헌법 제40조)." },
+      { t:"법률과 정책을 실제로 집행하여 나라 살림을 꾸려 나감", a:1,
+        e:"행정권은 대통령을 수반으로 하는 정부(행정부)에 속함 (헌법 제66조)." },
+      { t:"재판을 통해 사람들 사이의 분쟁을 해결함", a:2,
+        e:"사법권은 법관으로 구성된 법원에 속함 (헌법 제101조)." },
+      { t:"헌법과 법률, 그리고 양심에 따라 독립하여 재판함", a:2,
+        e:"사법권의 독립! 법관은 외부의 간섭 없이 헌법과 법률, 양심에 따라 심판함 (헌법 제103조)." },
+      { t:"국군을 통수하고 외국과의 외교를 이끎", a:1,
+        e:"대통령은 국가 원수이자 행정부 수반으로서 국군 통수권과 외교에 관한 권한을 가짐." },
+      { t:"공정한 재판을 위해 심급 제도(3심제)를 운영함", a:2,
+        e:"급이 다른 법원에서 여러 번 재판받을 수 있게 하여 잘못된 판결을 줄임." },
+      { t:"국무회의를 열어 정부의 주요 정책을 심의함", a:1,
+        e:"국무회의는 대통령, 국무총리, 국무위원으로 구성되는 행정부 최고 심의 기관." },
+      { t:"교육, 국방, 복지 등 여러 부(部)를 두고 나랏일을 나누어 맡음", a:1,
+        e:"행정 각부(교육부, 국방부 등)는 행정부에 속하며 구체적인 행정 사무를 담당함." },
+      { t:"죄가 있는지 판단하는 형사 재판, 개인 간 다툼을 해결하는 민사 재판을 담당함", a:2,
+        e:"법원은 민사·형사·행정·가사 재판 등을 통해 법을 적용하고 판단함." },
+      { t:"지역구 의원과 비례대표 의원으로 구성됨", a:0,
+        e:"국회는 지역구에서 선출된 의원과 정당 득표율에 따라 배분되는 비례대표 의원으로 구성됨." },
+      { t:"임기는 5년이며 중임할 수 없음", a:1,
+        e:"대통령의 임기는 5년 단임제 (헌법 제70조). 장기 집권을 막기 위한 장치!" },
+      { t:"국가 원수로서 헌법 기관을 구성함", a:1,
+        e:"대통령은 국가 원수로서 대법원장, 헌법재판소장 등 헌법 기관 구성에 관여함." },
+      { t:"최고 법원인 대법원과 각급 법원으로 조직됨", a:2,
+        e:"사법부는 최고 법원인 대법원과 고등 법원, 지방 법원 등 각급 법원으로 조직됨." },
+      { t:"9명의 재판관으로 구성되며 입법, 행정, 사법부에서 모두 참여하여 구성함", a:3,
+        e:"헌법재판소 재판관 9명은 대통령 임명 3인, 국회 선출 3인, 대법원장 지명 3인 — 삼부가 모두 참여!" },
+      { t:"헌법 개정안을 의결함", a:0,
+        e:"헌법 개정안은 국회 재적 의원 3분의 2 이상의 찬성으로 의결한 뒤, 국민 투표로 확정됨." },
+    ]
+  },
+  {
+    lv:"2단계 · 난이도 중", title:"한 걸음 더", speed:[9, 6.5],
+    desc:"예산, 조약, 탄핵, 계엄, 헌법재판소…\n시험에 자주 나오는 권한들! 카드도 조금 빨라진다.",
+    cards:[
+      { t:"행정부가 짜 온 한 해 예산안을 심의하고 확정함", a:0,
+        e:"국회는 예산안 심의·확정권을 통해 나라 살림을 통제함." },
+      { t:"헌법이나 법률을 위반한 고위 공직자에 대한 탄핵 소추를 의결함", a:0,
+        e:"국회는 대통령 등 고위 공직자에 대한 탄핵 소추권을 가짐. 최종 결정은 헌법재판소가 함." },
+      { t:"외국과 조약을 체결하고 비준함", a:1,
+        e:"조약 체결·비준은 국가 원수인 대통령의 권한. (중요한 조약은 국회 동의 필요!)" },
+      { t:"법률을 집행하는 데 필요한 세부 사항을 대통령령으로 정함", a:1,
+        e:"행정부는 법률의 범위 안에서 대통령령 등 명령을 만들 수 있음." },
+      { t:"대통령·국회의원 선거가 공정했는지에 대한 선거 소송을 재판함", a:2,
+        e:"대통령·국회의원 선거에 관한 소송은 대법원에서 재판함." },
+      { t:"전쟁 등 국가 비상사태에 계엄을 선포할 수 있음", a:1,
+        e:"계엄 선포권은 대통령의 권한. 단, 국회가 요구하면 계엄을 해제해야 함." },
+      { t:"국회에서 의결된 법률안을 공포함", a:1,
+        e:"국회가 법률안을 의결하면 대통령이 공포해야 법률로서 효력이 생김." },
+      { t:"재판의 심리와 판결은 원칙적으로 공개함", a:2,
+        e:"재판 공개의 원칙! 재판을 공개하여 공정성을 높이고 국민의 신뢰를 얻음." },
+      { t:"국회가 탄핵 소추한 고위 공직자에 대한 탄핵 심판을 담당함", a:3,
+        e:"탄핵 '소추'는 국회, 탄핵 '심판'은 헌법재판소! 역할 구분이 시험 포인트." },
+      { t:"국가 권력이 국민의 기본권을 침해했을 때 국민이 직접 청구하는 헌법 소원 심판을 담당함", a:3,
+        e:"헌법 소원 심판은 헌법재판소의 권한. 국민의 기본권을 지키는 최후의 보루!" },
+      { t:"조세의 종목 및 세율을 결정하는 권한이 있음", a:0,
+        e:"조세의 종목과 세율은 법률로 정함(조세 법률주의, 헌법 제59조) → 국회의 권한!" },
+      { t:"국가의 중요 정책을 국민 투표에 붙일 수 있음", a:1,
+        e:"대통령은 외교·국방·통일 등 국가 안위에 관한 중요 정책을 국민 투표에 부칠 수 있음 (헌법 제72조)." },
+      { t:"부동산에 대한 권리관계를 기록한 공적 문서인 등기에 관한 업무를 담당함", a:2,
+        e:"등기, 가족관계등록 등의 업무는 법원이 담당함. 법원은 재판 외의 일도 한다!" },
+      { t:"현대 복지 국가에서 국가 역할이 확대됨에 따라 규모가 커지고 전문성이 확대됨", a:1,
+        e:"복지 국가로 갈수록 행정부의 역할과 규모, 전문성이 커짐 → 행정부의 영향력이 커지는 현상!" },
+    ]
+  },
+  {
+    lv:"3단계 · 난이도 상", title:"견제와 균형", speed:[6.5, 4],
+    desc:"마지막 단계! 국가 기관들이 서로를 견제하는 장치들이다.\n제청과 심판, 소추와 심판을 구분하자. 속도 최고!",
+    cards:[
+      { t:"국회가 의결한 법률안에 이의가 있을 때 거부권(재의 요구)을 행사함", a:1,
+        e:"대통령의 법률안 거부권 → 행정부가 국회(입법부)를 견제하는 수단!" },
+      { t:"국정 감사를 실시하여 행정부가 일을 제대로 하는지 감시함", a:0,
+        e:"국정 감사권 → 국회가 행정부를 견제하는 대표적인 수단!" },
+      { t:"국무총리와 대법원장 임명에 대한 동의권을 가짐", a:0,
+        e:"임명 동의권 → 국회가 행정부와 사법부의 구성을 견제함." },
+      { t:"대법원장과 대법관을 임명함", a:1,
+        e:"대법원장·대법관 임명권 → 대통령(행정부)이 사법부 구성에 관여하며 견제함. (국회 동의도 필요!)" },
+      { t:"재판 중인 사건에 적용되는 법률이 헌법에 어긋난다고 판단되면 위헌 법률 심판을 제청함", a:2,
+        e:"위헌 법률 심판 제청권 → 법원이 국회가 만든 법률을 견제함. 심판은 헌법재판소가 담당!" },
+      { t:"행정부가 만든 명령·규칙이나 처분이 법에 어긋나는지 심사함", a:2,
+        e:"명령·규칙·처분 심사권 → 법원이 행정부를 견제하는 수단!" },
+      { t:"국무총리나 국무위원의 해임을 대통령에게 건의할 수 있음", a:0,
+        e:"해임 건의권 → 국회가 행정부를 견제하는 수단!" },
+      { t:"국무총리·국무위원을 국회에 출석시켜 질문에 답변하게 함", a:0,
+        e:"출석 요구·질문권 → 국회가 행정부의 일 처리를 직접 따져 물으며 견제함." },
+      { t:"국회에 법률안을 제출하여 입법 과정에 관여할 수 있음", a:1,
+        e:"법률안 제출권 → 정부(행정부)도 법률안을 낼 수 있어 입법부에 관여함. (국회의원도 가능!)" },
+      { t:"행정부의 잘못된 처분으로 권리를 침해당한 국민이 제기하는 행정 재판을 담당함", a:2,
+        e:"행정 재판 → 법원이 행정부의 잘못을 바로잡아 국민의 권리를 지키고 행정부를 견제함." },
+      { t:"국회가 만든 법률이 헌법에 위반되는지 최종적으로 심판함", a:3,
+        e:"위헌 법률 심판 → 헌법재판소가 입법부(국회)를 견제하는 수단! 법원은 '제청', 헌재는 '심판'." },
+      { t:"헌법에 어긋나는 활동을 하는 정당의 해산을 요청할 수 있음", a:1,
+        e:"위헌 정당 해산은 정부(행정부)가 헌법재판소에 제소하고, 해산 여부는 헌법재판소가 심판함!" },
+      { t:"국가 기관 사이에 분쟁이 발생했을 때 이를 해결하기 위한 권한 쟁의 심판을 담당함", a:3,
+        e:"권한 쟁의 심판 → 국가 기관 상호 간의 권한 다툼은 헌법재판소가 해결함." },
+      { t:"대통령이 맺은 중요한 조약에 대한 동의권을 행사함", a:0,
+        e:"조약을 맺는 것은 대통령이지만, 중요한 조약은 국회의 동의를 얻어야 효력이 생김. 행정부 견제 수단!" },
+    ]
+  }
+];
+
+const TOTAL = STAGES.reduce((s, st) => s + st.cards.length, 0);
+
+/* 속도 선택: 각 단계 낙하 시간에 곱해지는 배율 */
+const SPEED_MULT = [1.35, 1, 0.6];
+const SPEED_NAME = ['🐢 천천히', '🚶 보통', '🚀 빠르게'];
+let diff = 1;
+
+function setDiff(d, el){
+  diff = d;
+  document.querySelectorAll('.diff').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+let stageIdx = 0, deck = [], idx = 0, seen = 0;
+let score = 0, streak = 0, maxStreak = 0;
+let lives = 5, correct = 0, wrongList = [];
+let y = 0, fallTime = 10, areaH = 0, cardH = 0;
+let running = false, answered = false, lastTs = 0, rafId = null;
+
+const $ = id => document.getElementById(id);
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $(id).classList.add('on');
+}
+function shuffle(arr){
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function startGame(){
+  stageIdx = 0; seen = 0;
+  score = 0; streak = 0; maxStreak = 0; lives = 5; correct = 0; wrongList = [];
+  updateHud();
+  showInter();
+}
+
+function showInter(){
+  const st = STAGES[stageIdx];
+  $('inter-lv').textContent = st.lv;
+  $('inter-title').textContent = st.title;
+  $('inter-desc').innerHTML = st.desc.replace(/\n/g,'<br>');
+  const m = SPEED_MULT[diff];
+  $('inter-spd').innerHTML = `카드 낙하 시간: <b>${(st.speed[0]*m).toFixed(1)}초 → ${(st.speed[1]*m).toFixed(1)}초</b> · ${st.cards.length}장 · ${SPEED_NAME[diff]}`;
+  show('scr-inter');
+}
+
+function beginStage(){
+  deck = shuffle(STAGES[stageIdx].cards);
+  idx = 0;
+  show('scr-game');
+  updateHud();
+  requestAnimationFrame(()=>spawnCard());
+}
+
+function spawnCard(){
+  if(lives <= 0){ endGame(); return; }
+  if(idx >= deck.length){
+    stageIdx++;
+    if(stageIdx < STAGES.length){ showInter(); }
+    else { endGame(); }
+    return;
+  }
+  const c = deck[idx];
+  const fc = $('fcard');
+  fc.classList.remove('caught');
+  fc.textContent = c.t;
+  areaH = $('sky').clientHeight;
+  cardH = fc.offsetHeight;
+  y = -cardH;
+  const [t0, t1] = STAGES[stageIdx].speed;
+  fallTime = (deck.length > 1 ? t0 - (t0 - t1) * (idx / (deck.length - 1)) : t0) * SPEED_MULT[diff];
+  fc.style.transform = `translate(-50%, ${y}px)`;
+  answered = false;
+  running = true;
+  lastTs = 0;
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(tick);
+}
+
+function tick(ts){
+  if(!running) return;
+  if(!lastTs) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05);
+  lastTs = ts;
+  y += (areaH + cardH) / fallTime * dt;
+  $('fcard').style.transform = `translate(-50%, ${y}px)`;
+  if(y >= areaH - cardH){
+    running = false;
+    explode();
+    return;
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+/* 바닥 충돌 폭발 효과 */
+function explode(){
+  cancelAnimationFrame(rafId);
+  const sky = $('sky');
+  const fc = $('fcard');
+  const cx = sky.clientWidth / 2;
+  const cy = areaH - cardH / 2;
+  fc.classList.add('caught');
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reduce){
+    /* 화면 흔들림 */
+    sky.classList.remove('quake'); void sky.offsetWidth; sky.classList.add('quake');
+    /* 💥 폭발 */
+    const boom = document.createElement('div');
+    boom.className = 'boom show';
+    boom.textContent = '💥';
+    boom.style.left = cx + 'px';
+    boom.style.top = cy + 'px';
+    sky.appendChild(boom);
+    /* 충격파 */
+    const shock = document.createElement('div');
+    shock.className = 'shock';
+    shock.style.left = cx + 'px';
+    shock.style.top = cy + 'px';
+    sky.appendChild(shock);
+    /* 파편 */
+    const colors = ['#C0392B', '#C98A1B', '#6C4AB0', '#2B6CB0', '#2F855A'];
+    for(let i = 0; i < 14; i++){
+      const s = document.createElement('div');
+      s.className = 'spark';
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 60 + Math.random() * 90;
+      s.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+      s.style.setProperty('--dy', (Math.sin(ang) * dist - 30) + 'px');
+      s.style.left = cx + 'px';
+      s.style.top = cy + 'px';
+      s.style.background = colors[i % colors.length];
+      sky.appendChild(s);
+    }
+    setTimeout(()=>{
+      sky.querySelectorAll('.boom, .shock, .spark').forEach(el=>el.remove());
+    }, 750);
+  }
+  setTimeout(()=>miss('펑! 카드가 터졌어요!', deck[idx]), reduce ? 100 : 650);
+}
+
+function answer(i){
+  if(!running || answered) return;
+  answered = true;
+  const c = deck[idx];
+  const btn = document.querySelector(`.bldg[data-i="${i}"]`);
+  if(i === c.a){
+    running = false;
+    streak++; maxStreak = Math.max(maxStreak, streak);
+    correct++;
+    /* 스피드 보너스: 화면 위쪽에서 받을수록 최대 +50 */
+    const speedBonus = Math.round((1 - y / (areaH - cardH)) * 5) * 10;
+    const comboBonus = streak >= 2 ? (streak - 1) * 10 : 0;
+    const got = 100 + speedBonus + comboBonus;
+    score += got;
+    btn.classList.remove('flash-ok'); void btn.offsetWidth; btn.classList.add('flash-ok');
+    const toast = $('toast');
+    toast.textContent = `+${got}점!`;
+    toast.className = 'toast'; void toast.offsetWidth; toast.className = 'toast show';
+    const fc = $('fcard');
+    fc.classList.add('caught');
+    fc.style.transform = `translate(-50%, ${y + 40}px) scale(.6)`;
+    idx++; seen++;
+    updateHud();
+    setTimeout(spawnCard, 550);
+  } else {
+    running = false;
+    btn.classList.remove('flash-no'); void btn.offsetWidth; btn.classList.add('flash-no');
+    miss('앗, 다른 기관이에요!', c);
+  }
+}
+
+function miss(head, c){
+  cancelAnimationFrame(rafId);
+  streak = 0;
+  lives--;
+  wrongList.push({t:c.t, e:c.e, label:ORG[c.a], pi:c.a});
+  $('md-head').textContent = `❌ ${head}`;
+  $('md-q').textContent = c.t;
+  $('md-e').innerHTML = `정답은 <b>${ORG[c.a]}</b>!<br>${c.e}`;
+  $('overlay').classList.add('on');
+}
+
+function resume(){
+  $('overlay').classList.remove('on');
+  idx++; seen++;
+  updateHud();
+  if(lives <= 0){ endGame(); return; }
+  spawnCard();
+}
+
+function updateHud(){
+  $('hud-lives').textContent = '❤️'.repeat(lives) + '🖤'.repeat(5 - lives);
+  $('hud-score').textContent = score;
+  $('hud-combo').textContent = streak >= 2 ? `🔥 ${streak}콤보` : '';
+  const st = STAGES[Math.min(stageIdx, STAGES.length - 1)];
+  $('hud-stage').textContent = `${st.lv} · ${st.title}`;
+  $('hud-count').textContent = `${seen} / ${TOTAL}장`;
+  $('hud-bar').style.width = (seen / TOTAL * 100) + '%';
+}
+
+function endGame(){
+  running = false;
+  cancelAnimationFrame(rafId);
+  const cleared = lives > 0;
+  const rate = correct / TOTAL;
+  let tier;
+  if(cleared && rate >= 0.95)      tier = '👑 국가 기관 마스터';
+  else if(cleared && rate >= 0.8)  tier = '🏛️ 헌법 지킴이';
+  else if(cleared)                 tier = '📖 성실한 견습생';
+  else                             tier = '💪 게임 오버… 다시 도전!';
+  $('res-seal').innerHTML = cleared ? '합격<br>도장' : '재도전<br>도장';
+  $('res-tier').textContent = tier;
+  $('res-score').textContent = score;
+  const reach = cleared ? '3단계 완주 🎉' : `${stageIdx + 1}단계에서 종료`;
+  $('res-meta').innerHTML =
+    `${reach} · 정답 ${correct} / ${TOTAL}장 · 최고 콤보 ${maxStreak}연속 · ${SPEED_NAME[diff]}`;
+  if(wrongList.length){
+    $('res-review').style.display = 'block';
+    $('res-list').innerHTML = wrongList.map(w =>
+      `<li><span class="pill i${w.pi}">${w.label}</span><br><b>${w.t}</b><br>→ ${w.e}</li>`
+    ).join('');
+  }
+  show('scr-result');
+}
+
+/* 데스크톱 키보드 지원 */
+document.addEventListener('keydown', e=>{
+  if(e.key === '1') answer(0);
+  else if(e.key === '2') answer(1);
+  else if(e.key === '3') answer(2);
+  else if(e.key === '4') answer(3);
+});
+
+/* 화면 회전/크기 변경 대응 */
+window.addEventListener('resize', ()=>{
+  if(running){ areaH = $('sky').clientHeight; }
+});
+</script>
+</body>
+</html>

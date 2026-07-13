@@ -1,0 +1,13 @@
+{
+  "name": "국가 기관 낙하 게임",
+  "short_name": "국가기관",
+  "start_url": "./gov_game.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F4F8",
+  "theme_color": "#6C4AB0",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
